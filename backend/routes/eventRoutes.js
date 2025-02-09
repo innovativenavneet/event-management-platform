@@ -4,26 +4,38 @@ import multer from 'multer';
 import cloudinary from '../config/cloudinary.js';
 import Event from "../models/Event.js";
 
+import mongoose from 'mongoose';
+
 const router = express.Router();
 
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now());
-  }
-});
+// Use memory storage for multer
+const storage = multer.memoryStorage();
 
 // Initialize upload variable
 const upload = multer({ storage: storage });
 
 router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { path } = req.file;
-    const result = await cloudinary.uploader.upload(path);
+    const { buffer } = req.file;
+    const result = await cloudinary.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
+      if (error) {
+        throw new Error('Cloudinary upload failed');
+      }
+      return result;
+    }).end(buffer);
+
     const { name, description, date, location, category, createdBy } = req.body;
+
+    // Validate date
+    if (isNaN(Date.parse(date))) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    // Validate createdBy
+    if (!mongoose.Types.ObjectId.isValid(createdBy)) {
+      return res.status(400).json({ message: "Invalid createdBy format" });
+    }
 
     const newEvent = new Event({
       name,
@@ -39,7 +51,16 @@ router.post('/', upload.single('image'), async (req, res) => {
     res.status(201).json(newEvent);
   } catch (error) {
     console.error('Error creating event:', error); // Log the error details
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Error creating event", error: error.message });
+  }
+});
+// ✅ Get All Events
+router.get("/", async (req, res) => {
+  try {
+    const events = await Event.find().populate("createdBy", "name email");
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
   }
 });
 

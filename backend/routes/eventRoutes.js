@@ -38,7 +38,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     await newEvent.save();
     res.status(201).json(newEvent);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating event', error });
+    console.error('Error creating event:', error); // Log the error details
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

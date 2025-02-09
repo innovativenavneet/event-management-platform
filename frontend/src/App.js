@@ -8,6 +8,7 @@ import CreateEventPage from './pages/CreateEventPage';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import EventDetailsPage from './components/Event/EventDetails';
 
 const PrivateRoute = ({ element }) => {
   const { isAuthenticated } = useAuth();
@@ -38,6 +39,8 @@ function App() {
             <Route path="/" element={<PrivateRoute element={<Home />} />} />
             <Route path="/dashboard" element={<PrivateRoute element={<DashboardPage />} />} />
             <Route path="/create-event" element={<PrivateRoute element={<CreateEventPage />} />} />
+            <Route path="/events/:id" element={<EventDetailsPage />} />
+
           </Routes>
         </LayoutWrapper>
       </Router>

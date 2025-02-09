@@ -23,8 +23,7 @@ const LoginPage = () => {
   const [error, setError] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [isGuestLogin, setIsGuestLogin] = useState(false);
-  
+
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -33,7 +32,7 @@ const LoginPage = () => {
     setLoading(true);
     setMessage(null);
     setError(null);
-
+  
     try {
       let response;
       if (isRegistering) {
@@ -42,8 +41,12 @@ const LoginPage = () => {
         setIsRegistering(false);
       } else {
         response = await axios.post('https://event-management-platform-vgoc.onrender.com/api/auth/login', { email, password });
-        localStorage.setItem('user', JSON.stringify(response.data));
-        login();  // Mark user as authenticated
+  
+        const { token, user } = response.data;
+  
+        // Store full user details (including ID) in AuthContext
+        login({ token, ...user });
+  
         setMessage('🎉 Login Successful!');
         setOpenSnackbar(true);
         setTimeout(() => navigate('/'), 1000);
@@ -54,12 +57,12 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+  
 
   const handleGuestLogin = () => {
-    const guestUser = { fullName: 'Guest User', email: 'guest@example.com' };
+    const guestUser = { _id: 'guest-123', fullName: 'Guest User', email: 'guest@example.com' };
 
-    localStorage.setItem('user', JSON.stringify(guestUser));
-    login(); // Mark user as authenticated
+    login(guestUser); // Store guest user in AuthContext
 
     setMessage('🎉 Logged in as Guest!');
     setOpenSnackbar(true);
@@ -97,48 +100,46 @@ const LoginPage = () => {
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {!isGuestLogin && (
-            <form onSubmit={handleSubmit}>
-              {isRegistering && (
-                <TextField
-                  label="Full Name"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  fullWidth
-                  sx={{ mb: 2 }}
-                  InputProps={{ style: { color: '#fff' } }}
-                  InputLabelProps={{ style: { color: '#ccc' } }}
-                />
-              )}
+          <form onSubmit={handleSubmit}>
+            {isRegistering && (
               <TextField
-                label="Email"
-                type="email"
+                label="Full Name"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 fullWidth
                 sx={{ mb: 2 }}
                 InputProps={{ style: { color: '#fff' } }}
                 InputLabelProps={{ style: { color: '#ccc' } }}
               />
-              <TextField
-                label="Password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                fullWidth
-                sx={{ mb: 3 }}
-                InputProps={{ style: { color: '#fff' } }}
-                InputLabelProps={{ style: { color: '#ccc' } }}
-              />
-              <Button type="submit" variant="contained" fullWidth sx={{ mb: 2 }}>
-                {loading ? <CircularProgress size={24} color="inherit" /> : isRegistering ? 'Sign Up' : 'Login'}
-              </Button>
-            </form>
-          )}
+            )}
+            <TextField
+              label="Email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              InputProps={{ style: { color: '#fff' } }}
+              InputLabelProps={{ style: { color: '#ccc' } }}
+            />
+            <TextField
+              label="Password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+              sx={{ mb: 3 }}
+              InputProps={{ style: { color: '#fff' } }}
+              InputLabelProps={{ style: { color: '#ccc' } }}
+            />
+            <Button type="submit" variant="contained" fullWidth sx={{ mb: 2 }}>
+              {loading ? <CircularProgress size={24} color="inherit" /> : isRegistering ? 'Sign Up' : 'Login'}
+            </Button>
+          </form>
 
           <Button variant="outlined" onClick={handleGuestLogin} fullWidth sx={{ mb: 2 }}>
             Login as Guest

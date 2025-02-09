@@ -1,153 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, TextField, Button, Typography, MenuItem, Box, Paper } from '@mui/material';
-import { Event, Description, DateRange, LocationOn, Category, Image, People } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import {
+  Container,
+  TextField,
+  Button,
+  Typography,
+  MenuItem,
+  Box,
+  Paper,
+  Grid,
+  IconButton,
+  InputAdornment,
+  CircularProgress,
+} from '@mui/material';
+import { PhotoCamera, CloudUpload } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
+
+const categories = ["Conference", "Workshop", "Meetup", "Concert", "Webinar"];
 
 const CreateEventPage = () => {
+  const { user } = useAuth();
   const [eventData, setEventData] = useState({
-    name: '',
-    description: '',
-    date: '',
-    location: '',
-    category: '',
-    attendeesLimit: '',
-    image: null
+    name: "",
+    description: "",
+    date: "",
+    location: "",
+    category: "",
+    createdBy: "",
+    image: null,
   });
 
+  const [imagePreview, setImagePreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && user.id) {
+      console.log("User ID:", user.id); // Debugging
+      setEventData((prevData) => ({
+        ...prevData,
+        createdBy: user.id.toString(), // Ensure it's a string
+      }));
+    } else {
+      console.warn("User ID is missing! Make sure the user is logged in.");
+    }
+  }, [user]);
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEventData({ ...eventData, [name]: value });
+    setEventData({ ...eventData, [e.target.name]: e.target.value });
   };
 
   const handleImageUpload = (e) => {
-    setEventData({ ...eventData, image: e.target.files[0] });
+    const file = e.target.files[0];
+    if (file) {
+      setEventData({ ...eventData, image: file });
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    Object.keys(eventData).forEach((key) => {
-      formData.append(key, eventData[key]);
-    });
+    if (!eventData.createdBy || eventData.createdBy.trim() === "") {
+      alert("User ID is missing. Please log in again.");
+      return;
+    }
 
     try {
+      setLoading(true);
+      const formData = new FormData();
+      Object.entries(eventData).forEach(([key, value]) => formData.append(key, value));
+
       const response = await axios.post(
-        'https://event-management-platform-vgoc.onrender.com/api/events', 
-        formData, 
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        "https://event-management-platform-vgoc.onrender.com/api/events",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${user.token || ""}`,
+          },
+        }
       );
-      console.log(response.data);
+
+      alert("Event Created Successfully!");
+      setLoading(false);
     } catch (error) {
-      console.error(error);
+      console.error("Error creating event:", error.response?.data || error.message);
+      alert("Failed to create event.");
+      setLoading(false);
     }
   };
 
+
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1e3c72' }}
-          component={motion.h4}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          Create Event
-        </Typography>
+    <Container maxWidth="sm">
+      <Typography variant="h4" sx={{ my: 3, textAlign: 'center', fontWeight: 'bold' }}>
+        Create an Event 🎉
+      </Typography>
+      <Paper elevation={6} sx={{ p: 4, borderRadius: 3 }}>
+        <form onSubmit={handleCreateEvent}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth label="Event Name" 
+                name="name" value={eventData.name} 
+                onChange={handleChange} required 
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth label="Description" 
+                name="description" value={eventData.description} 
+                onChange={handleChange} multiline rows={3} required 
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                fullWidth label="Date" 
+                name="date" type="date" 
+                value={eventData.date} onChange={handleChange} 
+                InputLabelProps={{ shrink: true }} required 
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                fullWidth label="Location" 
+                name="location" value={eventData.location} 
+                onChange={handleChange} required 
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth select label="Category"
+                name="category" value={eventData.category}
+                onChange={handleChange} required
+              >
+                {categories.map((cat) => (
+                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <Button 
+                variant="contained" component="label" 
+                fullWidth sx={{ textTransform: "none" }} 
+                startIcon={<CloudUpload />}
+              >
+                Upload Image
+                <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+              </Button>
+            </Grid>
 
-        <Box component="form" onSubmit={handleCreateEvent} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Event Name"
-            name="name"
-            value={eventData.name}
-            onChange={handleChange}
-            required
-            fullWidth
-            InputProps={{ startAdornment: <Event sx={{ mr: 1 }} /> }}
-          />
-          
-          <TextField
-            label="Description"
-            name="description"
-            value={eventData.description}
-            onChange={handleChange}
-            required
-            fullWidth
-            multiline
-            rows={3}
-            InputProps={{ startAdornment: <Description sx={{ mr: 1 }} /> }}
-          />
+            {imagePreview && (
+              <Grid item xs={12} sx={{ textAlign: 'center' }}>
+                <img src={imagePreview} alt="Preview" 
+                  style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px", marginTop: "10px" }} 
+                />
+              </Grid>
+            )}
 
-          <TextField
-            label="Event Date & Time"
-            type="datetime-local"
-            name="date"
-            value={eventData.date}
-            onChange={handleChange}
-            required
-            fullWidth
-            InputProps={{ startAdornment: <DateRange sx={{ mr: 1 }} /> }}
-          />
-
-          <TextField
-            label="Location"
-            name="location"
-            value={eventData.location}
-            onChange={handleChange}
-            required
-            fullWidth
-            InputProps={{ startAdornment: <LocationOn sx={{ mr: 1 }} /> }}
-          />
-
-          <TextField
-            select
-            label="Category"
-            name="category"
-            value={eventData.category}
-            onChange={handleChange}
-            required
-            fullWidth
-            InputProps={{ startAdornment: <Category sx={{ mr: 1 }} /> }}
-          >
-            <MenuItem value="conference">Conference</MenuItem>
-            <MenuItem value="workshop">Workshop</MenuItem>
-            <MenuItem value="meetup">Meetup</MenuItem>
-          </TextField>
-
-          <TextField
-            label="Attendee Limit"
-            type="number"
-            name="attendeesLimit"
-            value={eventData.attendeesLimit}
-            onChange={handleChange}
-            required
-            fullWidth
-            InputProps={{ startAdornment: <People sx={{ mr: 1 }} /> }}
-          />
-
-          <Box display="flex" alignItems="center" gap={2}>
-            <Button variant="contained" component="label" startIcon={<Image />}>
-              Upload Image
-              <input type="file" hidden onChange={handleImageUpload} />
-            </Button>
-            {eventData.image && <Typography>{eventData.image.name}</Typography>}
-          </Box>
-
-          <Button
-            variant="contained"
-            type="submit"
-            sx={{
-              backgroundColor: '#1e3c72',
-              '&:hover': { backgroundColor: '#154286' }
-            }}
-          >
-            Create Event
-          </Button>
-        </Box>
+            <Grid item xs={12}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={loading}
+                sx={{ textTransform: "none", fontSize: "1rem", fontWeight: "bold" }}
+              >
+                {loading ? <CircularProgress size={24} /> : "Create Event"}
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
       </Paper>
     </Container>
   );

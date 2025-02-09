@@ -9,6 +9,7 @@ const eventSchema = new mongoose.Schema(
     category: { type: String },
     attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    imageUrl: { type: String }, // Add this line
   },
   { timestamps: true }
 );

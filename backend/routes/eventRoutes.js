@@ -1,13 +1,16 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
+import multer from 'multer';
+import cloudinary from '../config/cloudinary.js';
 import Event from "../models/Event.js";
 
 const router = express.Router();
 
-// ✅ Create an Event
-router.post("/", protect, async (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { name, description, date, location, category } = req.body;
+    const { path } = req.file;
+    const result = await cloudinary.uploader.upload(path);
+    const { name, description, date, location, category, createdBy } = req.body;
 
     const newEvent = new Event({
       name,
@@ -15,14 +18,14 @@ router.post("/", protect, async (req, res) => {
       date,
       location,
       category,
-      createdBy: req.user,
-      attendees: [],
+      createdBy,
+      imageUrl: result.secure_url,
     });
 
     await newEvent.save();
     res.status(201).json(newEvent);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: 'Error creating event', error });
   }
 });
 

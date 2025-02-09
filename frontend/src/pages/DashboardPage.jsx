@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Typography, CircularProgress, Grid, Card, CardContent, CardMedia, Button, Box, TextField, MenuItem } from '@mui/material';
-import { Event, DateRange, LocationOn, People, Add } from '@mui/icons-material';
+import { Event, DateRange, LocationOn, People } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-const DashboardPage = () => {
+const EventListPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('');
@@ -32,10 +32,7 @@ const DashboardPage = () => {
     const eventDate = new Date(event.date);
     const now = new Date();
 
-    // Filter by category
     if (category && event.category !== category) return false;
-
-    // Filter by date
     if (dateFilter === 'upcoming' && eventDate < now) return false;
     if (dateFilter === 'past' && eventDate >= now) return false;
 
@@ -53,7 +50,7 @@ const DashboardPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        Event Dashboard
+        Event List
       </Typography>
 
       {/* Filters */}
@@ -82,8 +79,6 @@ const DashboardPage = () => {
           <MenuItem value="upcoming">Upcoming Events</MenuItem>
           <MenuItem value="past">Past Events</MenuItem>
         </TextField>
-
-
       </Box>
 
       {/* Loading State */}
@@ -107,13 +102,13 @@ const DashboardPage = () => {
                   <CardMedia
                     component="img"
                     height="200"
-                    image={event.image || 'https://via.placeholder.com/300'}
-                    alt={event.title}
+                    image={event.imageUrl || 'https://via.placeholder.com/300'}
+                    alt={event.name}
                   />
                   <CardContent>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
                       <Event sx={{ verticalAlign: 'middle', mr: 1 }} />
-                      {event.title}
+                      {event.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       <DateRange sx={{ verticalAlign: 'middle', mr: 1 }} />
@@ -125,12 +120,13 @@ const DashboardPage = () => {
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 'bold', mt: 1 }}>
                       <People sx={{ verticalAlign: 'middle', mr: 1, color: 'green' }} />
-                      {event.attendeesCount || 0} Attendees
+                      {event.attendees ? event.attendees.length : 0} Attendees
                     </Typography>
                     <Button
                       variant="contained"
                       sx={{ mt: 2, backgroundColor: '#1e3c72', '&:hover': { backgroundColor: '#154286' } }}
                       fullWidth
+                      onClick={() => navigate(`/events/${event._id}`)}
                     >
                       View Details
                     </Button>
@@ -145,4 +141,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;
+export default EventListPage;
